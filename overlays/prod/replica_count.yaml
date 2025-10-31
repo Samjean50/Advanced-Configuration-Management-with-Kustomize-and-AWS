@@ -1,0 +1,6 @@
+apiVersion: apps/v1 # API version for the production object
+kind: Deployment # Specifies that this is a Deployment
+metadata:
+  name: nginx-production # Name of the production to patch
+spec:
+  replicas: 3  # Updating the number of replicas for the dev environment
