@@ -16,5 +16,5 @@ jobs:
       uses: imranismail/setup-kustomize@v1
     - name: Deploy to Kubernetes
       run: |
-        kubectl apply -k ./overlays/production/
+        kubectl apply -k ./overlays/prod/
 
