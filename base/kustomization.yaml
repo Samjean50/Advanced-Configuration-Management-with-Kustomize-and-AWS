@@ -4,3 +4,7 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
+
+commonLabels:
+  app: my-app
+  managed-by: kustomize

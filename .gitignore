@@ -1,1 +1,21 @@
 .secret
+# Kustomize
+kustomization.yaml.bak
+
+# Kubernetes
+*.kubeconfig
+
+# AWS
+aws-auth-backup.yaml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
