@@ -20,6 +20,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       
+      - name: Verify AWS identity
+        run: |
+          echo "Current AWS identity:"
+          aws sts get-caller-identity
+      
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
@@ -33,20 +38,26 @@ jobs:
       
       - name: Configure kubectl for EKS
         run: |
+          echo "Updating kubeconfig for EKS cluster..."
           aws eks update-kubeconfig --name sam-cluster --region us-east-1
-          kubectl version --client
+          
+          echo "Kubeconfig location:"
+          echo $KUBECONFIG
+          
+          echo "Current context:"
+          kubectl config current-context
       
       - name: Verify cluster access
         run: |
-          echo "Checking cluster connection..."
-          kubectl cluster-info
+          echo "Testing cluster connectivity..."
+          kubectl version --short
+          kubectl auth can-i get pods --all-namespaces
           kubectl get nodes
       
       - name: Build and validate Kustomize
         run: |
           echo "Building Kustomize configuration..."
-          kustomize build ./overlays/production/ > manifests.yaml
-          cat manifests.yaml
+          kustomize build ./overlays/production/
       
       - name: Deploy to Kubernetes
         run: |
@@ -55,8 +66,7 @@ jobs:
       
       - name: Verify deployment
         run: |
-          echo "Waiting for deployment to be ready..."
-          sleep 10
+          echo "Checking deployment status..."
+          kubectl get all
           kubectl get deployments
           kubectl get pods
-          kubectl get services
