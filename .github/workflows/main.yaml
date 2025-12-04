@@ -38,21 +38,14 @@ jobs:
       
       - name: Configure kubectl for EKS
         run: |
-          echo "Updating kubeconfig for EKS cluster..."
           aws eks update-kubeconfig --name sam-cluster --region us-east-1
-          
-          echo "Kubeconfig location:"
-          echo $KUBECONFIG
-          
-          echo "Current context:"
           kubectl config current-context
       
       - name: Verify cluster access
         run: |
           echo "Testing cluster connectivity..."
-          kubectl version --short
-          kubectl auth can-i get pods --all-namespaces
           kubectl get nodes
+          kubectl cluster-info
       
       - name: Build and validate Kustomize
         run: |
@@ -67,6 +60,7 @@ jobs:
       - name: Verify deployment
         run: |
           echo "Checking deployment status..."
+          sleep 10
           kubectl get all
           kubectl get deployments
           kubectl get pods
