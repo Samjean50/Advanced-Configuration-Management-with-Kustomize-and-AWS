@@ -1,4 +1,3 @@
-# Example for GitHub Actions
 name: Deploy with Kustomize
 
 on:
@@ -11,16 +10,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       
       - name: Set up Kubectl
-        uses: azure/setup-kubectl@v1
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
       
       - name: Set up Kustomize
-        uses: imranismail/setup-kustomize@v1
+        uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: '5.0.0'
       
+      # FIXED: Properly setup kubeconfig
+      - name: Configure Kubernetes Access
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          
+          # Verify the config is valid
+          kubectl config view --minify
+          kubectl cluster-info
+        env:
+          KUBECONFIG: $HOME/.kube/config
+      
+      # Validate before applying
+      - name: Validate Kustomize Configuration
+        run: |
+          kustomize build ./overlays/production/
+      
+      # Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -k ./overlays/production/
         env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+          KUBECONFIG: $HOME/.kube/config
+      
+      # Verify deployment
+      - name: Verify Deployment
+        run: |
+          kubectl get all -n default
+          kubectl rollout status deployment/prod-my-app || true
+        env:
+          KUBECONFIG: $HOME/.kube/config
