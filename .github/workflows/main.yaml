@@ -8,49 +8,55 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
       
-      - name: Set up Kubectl
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.28.0'
       
-      - name: Set up Kustomize
-        uses: imranismail/setup-kustomize@v2
-        with:
-          kustomize-version: '5.0.0'
-      
-      # FIXED: Properly setup kubeconfig
-      - name: Configure Kubernetes Access
+      - name: Install Kustomize
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-          
-          # Verify the config is valid
-          kubectl config view --minify
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+      
+      - name: Configure kubectl for EKS
+        run: |
+          aws eks update-kubeconfig --name sam-cluster --region us-east-1
+          kubectl version --client
+      
+      - name: Verify cluster access
+        run: |
+          echo "Checking cluster connection..."
           kubectl cluster-info
-        env:
-          KUBECONFIG: $HOME/.kube/config
+          kubectl get nodes
       
-      # Validate before applying
-      - name: Validate Kustomize Configuration
+      - name: Build and validate Kustomize
         run: |
-          kustomize build ./overlays/production/
+          echo "Building Kustomize configuration..."
+          kustomize build ./overlays/production/ > manifests.yaml
+          cat manifests.yaml
       
-      # Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
+          echo "Deploying to cluster..."
           kubectl apply -k ./overlays/production/
-        env:
-          KUBECONFIG: $HOME/.kube/config
       
-      # Verify deployment
-      - name: Verify Deployment
+      - name: Verify deployment
         run: |
-          kubectl get all -n default
-          kubectl rollout status deployment/prod-my-app || true
-        env:
-          KUBECONFIG: $HOME/.kube/config
+          echo "Waiting for deployment to be ready..."
+          sleep 10
+          kubectl get deployments
+          kubectl get pods
+          kubectl get services
