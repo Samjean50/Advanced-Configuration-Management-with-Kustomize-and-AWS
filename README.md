@@ -220,7 +220,9 @@ configMapGenerator:
 - Keep your base configuration DRY (Don’t Repeat Yourself).
 
 ## Step Screen Shoots
+![steps](images/1.png)
 ![steps](images/3.png)
+![steps](images/2.png)
 ![steps](images/4.png)
 ![steps](images/5.png)
 ![steps](images/6.png)
